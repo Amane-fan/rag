@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Optional;
 
+/**
+ * 基于 Redis 的登录态存储。
+ */
 @Component
 public class RedisSessionStore {
 

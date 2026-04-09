@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 知识库应用服务。
+ */
 @Service
 public class KnowledgeBaseApplicationService {
 

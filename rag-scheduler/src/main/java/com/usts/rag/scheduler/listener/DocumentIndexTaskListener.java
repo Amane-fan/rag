@@ -6,6 +6,9 @@ import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * 文档索引任务消费者。
+ */
 @Component
 @RocketMQMessageListener(
         topic = "${rag.mq.topics.document-index:rag-document-index}",

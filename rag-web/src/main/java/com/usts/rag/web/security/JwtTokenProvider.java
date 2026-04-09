@@ -12,6 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
+/**
+ * JWT 令牌生成与解析组件。
+ */
 @Component
 public class JwtTokenProvider {
 

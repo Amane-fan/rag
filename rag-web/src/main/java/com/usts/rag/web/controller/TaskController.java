@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 异步任务查询接口。
+ */
 @RestController
 @RequestMapping("/api/v1/tasks")
 public class TaskController {

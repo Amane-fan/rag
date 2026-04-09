@@ -2,6 +2,7 @@ package com.usts.rag.web.controller;
 
 import com.usts.rag.common.api.ApiResponse;
 import com.usts.rag.common.security.AuthenticatedUser;
+import com.usts.rag.common.security.UserContextHolder;
 import com.usts.rag.rag.model.LoginCommand;
 import com.usts.rag.rag.service.AuthApplicationService;
 import com.usts.rag.web.config.JwtProperties;
@@ -10,13 +11,15 @@ import com.usts.rag.web.dto.LoginResponse;
 import com.usts.rag.web.security.JwtTokenProvider;
 import com.usts.rag.web.security.RedisSessionStore;
 import jakarta.validation.Valid;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 认证接口。
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -44,8 +47,11 @@ public class AuthController {
         return ApiResponse.success(new LoginResponse(tokenPair.token(), tokenPair.expiresAt(), user));
     }
 
+    /**
+     * 返回当前登录用户信息，便于前端初始化会话上下文。
+     */
     @GetMapping("/me")
-    public ApiResponse<AuthenticatedUser> me(Authentication authentication) {
-        return ApiResponse.success((AuthenticatedUser) authentication.getPrincipal());
+    public ApiResponse<AuthenticatedUser> me() {
+        return ApiResponse.success(UserContextHolder.requireUser());
     }
 }

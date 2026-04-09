@@ -17,6 +17,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 向量知识库适配器。
+ * <p>
+ * 优先使用 Spring AI VectorStore 检索；若向量库不可用，则退化为基于分片文本的简单匹配检索。
+ */
 @Component
 public class SpringAiVectorKnowledgeStore implements VectorKnowledgeStore {
 
@@ -86,6 +91,7 @@ public class SpringAiVectorKnowledgeStore implements VectorKnowledgeStore {
     }
 
     private List<RetrievedSegment> searchFallback(String knowledgeBaseId, String query, int topK) {
+        // 这里的降级策略只用于本地联调，不适合作为生产检索方案。
         return documentRepository.findSegmentsByKnowledgeBaseId(knowledgeBaseId, 50).stream()
                 .sorted(Comparator.comparingInt(segment -> -score(segment.getContent(), query)))
                 .limit(topK)

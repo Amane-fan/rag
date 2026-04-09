@@ -20,6 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 文档应用服务。
+ * <p>
+ * 负责接收上传后的文档元数据，创建异步索引任务，并投递到消息队列。
+ */
 @Service
 public class DocumentApplicationService {
 

@@ -10,6 +10,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * 大模型对话适配器。
+ * <p>
+ * 优先走 Spring AI ChatClient；在未配置模型或调用失败时降级返回 mock 结果，
+ * 以保证本地骨架在基础设施未完全就绪时仍能联调。
+ */
 @Component
 public class SpringAiChatCompletionAdapter implements ChatCompletionPort {
 
@@ -46,6 +52,7 @@ public class SpringAiChatCompletionAdapter implements ChatCompletionPort {
         if (contexts.isEmpty()) {
             return "Question:\n" + question + "\n\nNo knowledge snippets were retrieved.";
         }
+        // 将检索出的片段直接拼入提示词，便于快速搭建最小可运行 RAG 流程。
         return "Question:\n" + question + "\n\nKnowledge snippets:\n- " + String.join("\n- ", contexts);
     }
 

@@ -19,6 +19,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 文档索引服务。
+ * <p>
+ * 消费异步任务后执行切片、落库与向量索引，维护文档和任务状态流转。
+ */
 @Service
 public class DocumentIndexingService {
 
@@ -86,6 +91,7 @@ public class DocumentIndexingService {
         if (content == null || content.isBlank()) {
             content = "Document " + document.getFileName() + " has no parsed text, using file name as placeholder.";
         }
+        // 首版采用字符级切片，后续可替换为更适合中文语义的分句/分段策略。
         List<String> chunks = TextChunker.chunk(content,
                 ragPipelineProperties.getChunkSize(),
                 ragPipelineProperties.getChunkOverlap());

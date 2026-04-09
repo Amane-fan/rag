@@ -3,6 +3,11 @@ package com.usts.rag.rag.service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 简单文本切片工具。
+ * <p>
+ * 目前采用固定窗口 + 重叠字符的方式，便于快速搭建可运行骨架。
+ */
 public final class TextChunker {
 
     private TextChunker() {

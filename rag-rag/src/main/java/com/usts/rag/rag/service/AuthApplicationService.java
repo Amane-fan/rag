@@ -16,6 +16,9 @@ public class AuthApplicationService {
         this.adminAuthProperties = adminAuthProperties;
     }
 
+    /**
+     * 首版仅提供平台管理员登录，后续可平滑扩展为数据库用户体系或 SSO。
+     */
     public AuthenticatedUser authenticate(LoginCommand command) {
         boolean matched = adminAuthProperties.getUsername().equals(command.username())
                 && adminAuthProperties.getPassword().equals(command.password());

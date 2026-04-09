@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 异步任务查询服务。
+ */
 @Service
 public class TaskApplicationService {
 

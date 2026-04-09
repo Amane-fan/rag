@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 问答应用服务。
+ * <p>
+ * 负责串联知识库校验、向量检索、上下文组装和大模型回答生成。
+ */
 @Service
 public class ChatApplicationService {
 
@@ -33,6 +38,9 @@ public class ChatApplicationService {
         this.ragPipelineProperties = ragPipelineProperties;
     }
 
+    /**
+     * 执行一次基于知识库的问答请求。
+     */
     public ChatAnswer ask(ChatAskCommand command) {
         KnowledgeBaseEntity knowledgeBase = knowledgeBaseRepository.findById(command.knowledgeBaseId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Knowledge base not found"));

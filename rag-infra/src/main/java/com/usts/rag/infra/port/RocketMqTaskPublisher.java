@@ -9,6 +9,9 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * RocketMQ 任务发布适配器。
+ */
 @Component
 public class RocketMqTaskPublisher implements TaskPublisher {
 

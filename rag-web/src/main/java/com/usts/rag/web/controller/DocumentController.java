@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * 文档管理接口。
+ */
 @RestController
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
@@ -35,6 +38,7 @@ public class DocumentController {
     public ApiResponse<DocumentUploadResult> upload(@RequestParam("knowledgeBaseId") String knowledgeBaseId,
                                                     @RequestPart("file") MultipartFile file) throws IOException {
         String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "unnamed.txt";
+        // 当前骨架默认把上传内容按 UTF-8 文本读取，后续可接入 PDF/Word/HTML 等解析器。
         String rawContent = new String(file.getBytes(), StandardCharsets.UTF_8);
         DocumentUploadResult result = documentApplicationService.upload(new DocumentUploadCommand(
                 knowledgeBaseId,

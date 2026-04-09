@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * 处理主动抛出的业务异常，向前端返回可预期的错误码与消息。
+     */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException exception) {
         HttpStatus status = switch (exception.getErrorCode()) {
@@ -34,6 +37,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.BAD_REQUEST.name(), message));
     }
 
+    /**
+     * 兜底异常处理，避免未捕获异常直接暴露堆栈给前端。
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnknown(Exception exception, HttpServletRequest request) {
         String message = "Unexpected error on " + request.getRequestURI() + ": " + exception.getMessage();
