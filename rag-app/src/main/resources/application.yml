@@ -52,7 +52,7 @@ rag:
   auth:
     admin:
       username: admin
-      password: ChangeMe123!
+      password: admin
       display-name: Platform Admin
   jwt:
     secret: ChangeThisSecretKeyForProductionOnly1234567890

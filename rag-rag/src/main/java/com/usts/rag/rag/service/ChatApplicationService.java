@@ -48,14 +48,19 @@ public class ChatApplicationService {
             throw new BusinessException(ErrorCode.CONFLICT, "Knowledge base is not active");
         }
 
+        // 调用方未显式指定 topK 时，优先使用知识库配置，再退化到系统默认值。
         int topK = command.topK() != null ? command.topK() : defaultTopK(knowledgeBase);
         List<RetrievedSegment> hits = vectorKnowledgeStore.search(command.knowledgeBaseId(), command.question(), topK);
+        // 大模型接口只需要片段正文，因此这里先把检索命中的实体映射成上下文文本集合。
         List<String> contexts = hits.stream().map(RetrievedSegment::content).toList();
         String answer = chatCompletionPort.complete(command.question(), contexts);
 
         return new ChatAnswer(command.knowledgeBaseId(), command.question(), answer, hits);
     }
 
+    /**
+     * 获取一次问答的默认召回数量。
+     */
     private int defaultTopK(KnowledgeBaseEntity knowledgeBase) {
         return knowledgeBase.getTopK() != null ? knowledgeBase.getTopK() : ragPipelineProperties.getDefaultTopK();
     }

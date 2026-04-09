@@ -24,6 +24,9 @@ public class ChatController {
         this.chatApplicationService = chatApplicationService;
     }
 
+    /**
+     * 发起一次基于知识库的问答请求。
+     */
     @PostMapping("/ask")
     public ApiResponse<ChatAnswer> ask(@Valid @RequestBody ChatAskRequest request) {
         ChatAnswer answer = chatApplicationService.ask(new ChatAskCommand(

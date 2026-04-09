@@ -42,6 +42,11 @@ public class DocumentIndexingService {
         this.ragPipelineProperties = ragPipelineProperties;
     }
 
+    /**
+     * 执行单个文档的索引任务。
+     * <p>
+     * 流程包括：标记处理中 -> 构造切片 -> 落库分片 -> 写入向量索引 -> 更新最终状态。
+     */
     @Transactional
     public void process(String taskId, String documentId) {
         AsyncTaskEntity task = asyncTaskRepository.findById(taskId)
@@ -50,6 +55,7 @@ public class DocumentIndexingService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
 
         LocalDateTime now = LocalDateTime.now();
+        // 先把任务和文档置为处理中，便于前端和运维侧观察执行进度。
         task.setStatus(TaskStatus.PROCESSING.name());
         task.setUpdatedAt(now);
         asyncTaskRepository.update(task);
@@ -60,6 +66,7 @@ public class DocumentIndexingService {
 
         try {
             List<DocumentSegmentEntity> segments = buildSegments(document);
+            // replaceSegments 会先清旧分片再写入新分片，适合重建索引场景。
             documentRepository.replaceSegments(documentId, segments);
             vectorKnowledgeStore.indexSegments(document.getKnowledgeBaseId(), documentId, segments);
 
@@ -73,6 +80,7 @@ public class DocumentIndexingService {
             task.setUpdatedAt(LocalDateTime.now());
             asyncTaskRepository.update(task);
         } catch (Exception exception) {
+            // 任何阶段失败都要把错误回写到文档和任务，方便排障和重试。
             document.setStatus(DocumentStatus.FAILED.name());
             document.setErrorMessage(exception.getMessage());
             document.setUpdatedAt(LocalDateTime.now());
@@ -86,9 +94,13 @@ public class DocumentIndexingService {
         }
     }
 
+    /**
+     * 按配置把原始文档切成多个片段，供后续向量化和检索使用。
+     */
     private List<DocumentSegmentEntity> buildSegments(DocumentRecordEntity document) {
         String content = document.getRawContent();
         if (content == null || content.isBlank()) {
+            // 骨架阶段如果解析不到正文，就退化为使用文件名占位，保证链路仍可跑通。
             content = "Document " + document.getFileName() + " has no parsed text, using file name as placeholder.";
         }
         // 首版采用字符级切片，后续可替换为更适合中文语义的分句/分段策略。
