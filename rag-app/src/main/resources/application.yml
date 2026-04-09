@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: rag-platform
+  datasource:
+    url: jdbc:postgresql://localhost:5432/rag_platform
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5s
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  ai:
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:demo-key}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+      embedding:
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: rag-platform-producer
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+rag:
+  auth:
+    admin:
+      username: admin
+      password: ChangeMe123!
+      display-name: Platform Admin
+  jwt:
+    secret: ChangeThisSecretKeyForProductionOnly1234567890
+    ttl: PT8H
+  rag:
+    default-top-k: 4
+    chunk-size: 500
+    chunk-overlap: 100
+    fallback-prefix: "[mock-answer]"
+  mq:
+    topics:
+      document-index: rag-document-index
+    consumer-groups:
+      document-index: rag-document-index-group
