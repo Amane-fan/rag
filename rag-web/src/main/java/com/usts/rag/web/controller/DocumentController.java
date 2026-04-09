@@ -18,11 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * 文档管理接口。
+ * <p>
+ * 负责接收上传请求，并把结果转换成前端更容易消费的响应结构。
  */
 @RestController
 @RequestMapping("/api/v1/documents")
@@ -34,20 +35,26 @@ public class DocumentController {
         this.documentApplicationService = documentApplicationService;
     }
 
+    /**
+     * 上传文档并创建异步索引任务。
+     * <p>
+     * 文件解析由应用层统一处理，支持通过 Apache Tika 提取常见文档格式中的文本。
+     */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<DocumentUploadResult> upload(@RequestParam("knowledgeBaseId") String knowledgeBaseId,
                                                     @RequestPart("file") MultipartFile file) throws IOException {
         String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "unnamed.txt";
-        // 当前骨架默认把上传内容按 UTF-8 文本读取，后续可接入 PDF/Word/HTML 等解析器。
-        String rawContent = new String(file.getBytes(), StandardCharsets.UTF_8);
         DocumentUploadResult result = documentApplicationService.upload(new DocumentUploadCommand(
                 knowledgeBaseId,
                 fileName,
                 file.getContentType(),
-                rawContent));
+                file.getBytes()));
         return ApiResponse.success(result);
     }
 
+    /**
+     * 查询指定知识库下的文档列表。
+     */
     @GetMapping
     public ApiResponse<List<DocumentSummaryResponse>> list(@RequestParam("knowledgeBaseId") String knowledgeBaseId) {
         List<DocumentSummaryResponse> items = documentApplicationService.listByKnowledgeBaseId(knowledgeBaseId).stream()
@@ -58,6 +65,9 @@ public class DocumentController {
         return ApiResponse.success(items);
     }
 
+    /**
+     * 查询单个文档详情，便于排查原文、索引状态和错误信息。
+     */
     @GetMapping("/detail")
     public ApiResponse<DocumentDetailResponse> detail(@RequestParam("id") String id) {
         DocumentRecordEntity document = documentApplicationService.getById(id);
