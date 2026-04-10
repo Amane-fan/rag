@@ -9,7 +9,7 @@ public record DocumentDetailResponse(
         String contentType,
         String status,
         String errorMessage,
-        String rawContent,
+        String content,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

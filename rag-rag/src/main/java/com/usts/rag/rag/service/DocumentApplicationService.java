@@ -15,6 +15,8 @@ import com.usts.rag.domain.port.TaskPublisher;
 import com.usts.rag.rag.model.DocumentUploadCommand;
 import com.usts.rag.rag.model.DocumentUploadResult;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -33,17 +35,20 @@ public class DocumentApplicationService {
     private final AsyncTaskRepository asyncTaskRepository;
     private final TaskPublisher taskPublisher;
     private final DocumentTextExtractor documentTextExtractor;
+    private final DocumentContentService documentContentService;
 
     public DocumentApplicationService(KnowledgeBaseRepository knowledgeBaseRepository,
                                       DocumentRepository documentRepository,
                                       AsyncTaskRepository asyncTaskRepository,
                                       TaskPublisher taskPublisher,
-                                      DocumentTextExtractor documentTextExtractor) {
+                                      DocumentTextExtractor documentTextExtractor,
+                                      DocumentContentService documentContentService) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
         this.documentRepository = documentRepository;
         this.asyncTaskRepository = asyncTaskRepository;
         this.taskPublisher = taskPublisher;
         this.documentTextExtractor = documentTextExtractor;
+        this.documentContentService = documentContentService;
     }
 
     /**
@@ -57,34 +62,48 @@ public class DocumentApplicationService {
         knowledgeBaseRepository.findById(command.knowledgeBaseId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Knowledge base not found"));
 
-        String rawContent = documentTextExtractor.extract(command.fileName(), command.contentType(), command.fileBytes());
+        String documentId = IdGenerator.nextId();
+        String parsedContent = documentTextExtractor.extract(command.fileName(), command.contentType(), command.fileBytes());
+        // 将解析出的纯文本存储到阿里云OSS中，返回对应的key
+        String contentStorageKey = documentContentService.storeParsedContent(
+                command.knowledgeBaseId(),
+                documentId,
+                command.fileName(),
+                command.contentType(),
+                parsedContent);
+        registerRollbackCleanup(contentStorageKey);
 
-        // 保存文档
-        LocalDateTime now = LocalDateTime.now();
-        DocumentRecordEntity document = new DocumentRecordEntity();
-        document.setId(IdGenerator.nextId());
-        document.setKnowledgeBaseId(command.knowledgeBaseId());
-        document.setFileName(command.fileName());
-        document.setContentType(command.contentType());
-        document.setRawContent(rawContent);
-        document.setStatus(DocumentStatus.UPLOADED.name());
-        document.setCreatedAt(now);
-        document.setUpdatedAt(now);
-        documentRepository.save(document);
+        try {
+            // 保存文档 pending -> uploaded
+            LocalDateTime now = LocalDateTime.now();
+            DocumentRecordEntity document = new DocumentRecordEntity();
+            document.setId(documentId);
+            document.setKnowledgeBaseId(command.knowledgeBaseId());
+            document.setFileName(command.fileName());
+            document.setContentType(command.contentType());
+            document.setContentStorageKey(contentStorageKey);
+            document.setStatus(DocumentStatus.UPLOADED.name());
+            document.setCreatedAt(now);
+            document.setUpdatedAt(now);
+            documentRepository.save(document);
 
-        // 文档入库后立即创建索引任务，后续由 MQ 消费端异步执行切片和向量化。
-        AsyncTaskEntity task = new AsyncTaskEntity();
-        task.setId(IdGenerator.nextId());
-        task.setBusinessId(document.getId());
-        task.setTaskType(TaskType.DOCUMENT_INDEX.name());
-        task.setStatus(TaskStatus.PENDING.name());
-        task.setCreatedAt(now);
-        task.setUpdatedAt(now);
-        asyncTaskRepository.save(task);
+            // 文档入库后立即创建索引任务，后续由 MQ 消费端异步执行切片和向量化。
+            AsyncTaskEntity task = new AsyncTaskEntity();
+            task.setId(IdGenerator.nextId());
+            task.setBusinessId(document.getId());
+            task.setTaskType(TaskType.DOCUMENT_INDEX.name());
+            task.setStatus(TaskStatus.PENDING.name());
+            task.setCreatedAt(now);
+            task.setUpdatedAt(now);
+            asyncTaskRepository.save(task);
 
-        // 发布文档索引任务
-        taskPublisher.publishDocumentIndexTask(task.getId(), document.getId());
-        return new DocumentUploadResult(document.getId(), task.getId(), task.getStatus());
+            // 发布文档索引任务
+            taskPublisher.publishDocumentIndexTask(task.getId(), document.getId());
+            return new DocumentUploadResult(document.getId(), task.getId(), task.getStatus());
+        } catch (RuntimeException exception) {
+            documentContentService.delete(contentStorageKey);
+            throw exception;
+        }
     }
 
     /**
@@ -100,5 +119,22 @@ public class DocumentApplicationService {
     public DocumentRecordEntity getById(String id) {
         return documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
+    }
+
+    public String loadContent(DocumentRecordEntity document) {
+        return documentContentService.load(document);
+    }
+
+    private void registerRollbackCleanup(String contentStorageKey) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                        documentContentService.delete(contentStorageKey);
+                    }
+                }
+            });
+        }
     }
 }

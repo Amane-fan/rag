@@ -31,15 +31,18 @@ public class DocumentIndexingService {
     private final DocumentRepository documentRepository;
     private final VectorKnowledgeStore vectorKnowledgeStore;
     private final RagPipelineProperties ragPipelineProperties;
+    private final DocumentContentService documentContentService;
 
     public DocumentIndexingService(AsyncTaskRepository asyncTaskRepository,
                                    DocumentRepository documentRepository,
                                    VectorKnowledgeStore vectorKnowledgeStore,
-                                   RagPipelineProperties ragPipelineProperties) {
+                                   RagPipelineProperties ragPipelineProperties,
+                                   DocumentContentService documentContentService) {
         this.asyncTaskRepository = asyncTaskRepository;
         this.documentRepository = documentRepository;
         this.vectorKnowledgeStore = vectorKnowledgeStore;
         this.ragPipelineProperties = ragPipelineProperties;
+        this.documentContentService = documentContentService;
     }
 
     /**
@@ -49,32 +52,39 @@ public class DocumentIndexingService {
      */
     @Transactional
     public void process(String taskId, String documentId) {
+        // 获取异步任务信息
         AsyncTaskEntity task = asyncTaskRepository.findById(taskId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Task not found"));
+        // 获取处理文档信息
         DocumentRecordEntity document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
 
         LocalDateTime now = LocalDateTime.now();
-        // 先把任务和文档置为处理中，便于前端和运维侧观察执行进度。
+        // 先把任务和文档置为处理中，便于前端和运维侧观察执行进度。 pending -> processing
         task.setStatus(TaskStatus.PROCESSING.name());
         task.setUpdatedAt(now);
         asyncTaskRepository.update(task);
 
+        // uploaded -> indexing
         document.setStatus(DocumentStatus.INDEXING.name());
         document.setUpdatedAt(now);
         documentRepository.update(document);
 
         try {
+            // 获取文档分块信息
             List<DocumentSegmentEntity> segments = buildSegments(document);
             // replaceSegments 会先清旧分片再写入新分片，适合重建索引场景。
             documentRepository.replaceSegments(documentId, segments);
+            // 向量化并存入数据库
             vectorKnowledgeStore.indexSegments(document.getKnowledgeBaseId(), documentId, segments);
 
+            // indexing -> indexed
             document.setStatus(DocumentStatus.INDEXED.name());
             document.setErrorMessage(null);
             document.setUpdatedAt(LocalDateTime.now());
             documentRepository.update(document);
 
+            // processing -> success
             task.setStatus(TaskStatus.SUCCESS.name());
             task.setErrorMessage(null);
             task.setUpdatedAt(LocalDateTime.now());
@@ -98,7 +108,7 @@ public class DocumentIndexingService {
      * 按配置把原始文档切成多个片段，供后续向量化和检索使用。
      */
     private List<DocumentSegmentEntity> buildSegments(DocumentRecordEntity document) {
-        String content = document.getRawContent();
+        String content = documentContentService.load(document);
         if (content == null || content.isBlank()) {
             // 骨架阶段如果解析不到正文，就退化为使用文件名占位，保证链路仍可跑通。
             content = "Document " + document.getFileName() + " has no parsed text, using file name as placeholder.";

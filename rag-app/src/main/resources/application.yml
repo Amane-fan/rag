@@ -18,17 +18,19 @@ spring:
       max-request-size: 20MB
   ai:
     openai:
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-      api-key: ${OPENAI_API_KEY:demo-key}
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+      api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+          model: ${BAILIAN_CHAT_MODEL:qwen-plus}
       embedding:
         options:
-          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+          model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+          dimensions: ${DASHSCOPE_EMBEDDING_DIMENSIONS:1024}
     vectorstore:
       pgvector:
         initialize-schema: true
+        dimensions: ${DASHSCOPE_EMBEDDING_DIMENSIONS:1024}
 
 server:
   port: 8080
@@ -67,3 +69,10 @@ rag:
       document-index: rag-document-index
     consumer-groups:
       document-index: rag-document-index-group
+  storage:
+    oss:
+      endpoint: ${OSS_ENDPOINT:}
+      bucket: amane-13
+      access-key-id: ${OSS_ACCESS_KEY_ID:}
+      access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+      key-prefix: ${OSS_KEY_PREFIX:document-content}

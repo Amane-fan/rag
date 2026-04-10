@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
             if (authorization != null && authorization.startsWith("Bearer ")) {
-                String token = authorization.substring(7);
+                String token = authorization.substring(7).trim();
                 Claims claims = jwtTokenProvider.parseClaims(token);
                 String sessionId = claims.get("sessionId", String.class);
                 // 如果redis中存在用户信息，将其写入threadLocal

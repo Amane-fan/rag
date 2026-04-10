@@ -14,7 +14,7 @@ public class DocumentRecordEntity {
     private String knowledgeBaseId;
     private String fileName;
     private String contentType;
-    private String rawContent;
+    private String contentStorageKey;
     private String status;
     private String errorMessage;
     private LocalDateTime createdAt;
@@ -52,12 +52,12 @@ public class DocumentRecordEntity {
         this.contentType = contentType;
     }
 
-    public String getRawContent() {
-        return rawContent;
+    public String getContentStorageKey() {
+        return contentStorageKey;
     }
 
-    public void setRawContent(String rawContent) {
-        this.rawContent = rawContent;
+    public void setContentStorageKey(String contentStorageKey) {
+        this.contentStorageKey = contentStorageKey;
     }
 
     public String getStatus() {

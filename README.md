@@ -20,14 +20,18 @@
 docker compose up -d
 ```
 
-2. 配置模型：
+2. 配置阿里百炼模型：
 
 ```bash
-export OPENAI_BASE_URL=https://your-compatible-endpoint
-export OPENAI_API_KEY=your-api-key
-export OPENAI_CHAT_MODEL=gpt-4o-mini
-export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+export DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
+export DASHSCOPE_API_KEY=your-bailian-api-key
+export BAILIAN_CHAT_MODEL=qwen-plus
+export DASHSCOPE_EMBEDDING_MODEL=text-embedding-v4
+export DASHSCOPE_EMBEDDING_DIMENSIONS=1024
 ```
+
+当前项目通过 Spring AI 的 OpenAI 兼容接口接入阿里百炼，因此底层配置键仍使用 `spring.ai.openai.*`，
+但默认值已切换为百炼兼容地址与模型。若已有 `OPENAI_*` 环境变量，也仍可作为回退使用。
 
 3. 启动应用：
 
@@ -38,7 +42,7 @@ mvn -pl rag-app spring-boot:run
 默认管理员账号在 [application.yml](/mnt/d/Amane/rag/rag-app/src/main/resources/application.yml) 中：
 
 - 用户名：`admin`
-- 密码：`ChangeMe123!`
+- 密码：`admin`
 
 ## 当前提供的基础能力
 

@@ -16,7 +16,8 @@ create table if not exists document_record (
     knowledge_base_id varchar(64) not null,
     file_name varchar(256) not null,
     content_type varchar(128),
-    raw_content text,
+    -- Parsed document content is stored in Aliyun OSS; this column stores the OSS object key.
+    content_storage_key varchar(512),
     status varchar(32) not null,
     error_message varchar(512),
     created_at timestamp not null,

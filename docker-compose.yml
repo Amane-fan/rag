@@ -31,10 +31,10 @@ services:
     container_name: rag-rocketmq-broker
     depends_on:
       - rocketmq-namesrv
-    environment:
-      NAMESRV_ADDR: rocketmq-namesrv:9876
-    command: sh mqbroker -n rocketmq-namesrv:9876 --enable-proxy
+    command: sh mqbroker -c /home/rocketmq/broker.conf
     ports:
       - "10911:10911"
       - "10909:10909"
+    volumes:
+      - ./rocketmq/broker.conf:/home/rocketmq/broker.conf:ro
 

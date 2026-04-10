@@ -44,6 +44,7 @@ public class DocumentController {
     public ApiResponse<DocumentUploadResult> upload(@RequestParam("knowledgeBaseId") String knowledgeBaseId,
                                                     @RequestPart("file") MultipartFile file) throws IOException {
         String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "unnamed.txt";
+        // String documentId, String taskId, String status
         DocumentUploadResult result = documentApplicationService.upload(new DocumentUploadCommand(
                 knowledgeBaseId,
                 fileName,
@@ -71,8 +72,9 @@ public class DocumentController {
     @GetMapping("/detail")
     public ApiResponse<DocumentDetailResponse> detail(@RequestParam("id") String id) {
         DocumentRecordEntity document = documentApplicationService.getById(id);
+        String content = documentApplicationService.loadContent(document);
         return ApiResponse.success(new DocumentDetailResponse(document.getId(), document.getKnowledgeBaseId(),
                 document.getFileName(), document.getContentType(), document.getStatus(),
-                document.getErrorMessage(), document.getRawContent(), document.getCreatedAt(), document.getUpdatedAt()));
+                document.getErrorMessage(), content, document.getCreatedAt(), document.getUpdatedAt()));
     }
 }
